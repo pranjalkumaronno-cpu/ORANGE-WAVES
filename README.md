@@ -80,5 +80,10 @@ We are building this project under a **shared equity/co-founder framework**. To 
 * Core code milestones are tracked publicly in the project's repository dashboard.
 * Contributions correspond directly to project milestones outlined in our initial founder agreements.
 
+
+
+📱 **Join our community:** [Orange Waves Discord Server](https://discord.gg/RDkPbfmxs3)
+
 ---
 *Designed with 🧡 for the future of student productivity.*
+
