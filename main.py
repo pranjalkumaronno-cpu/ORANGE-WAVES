@@ -10,7 +10,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 orange_waves = tk.Tk()
 orange_waves.title("ORANGE WAVES")
-orange_waves.config(bg="#491a0b")
+orange_waves.config(bg="#ccff00")
 orange_waves.geometry("782x441")
 orange_waves.update_idletasks()
 
@@ -27,20 +27,20 @@ style = ttk.Style(orange_waves)
 style.theme_use("clam")
 
 
-style.configure("r.TButton", background="#e6e6e6", foreground="#008ba3", borderwidth=3, relief=tk.RAISED, font=("Courier", 13, "bold"), cursor="arrow")
-style.map("r.TButton", background=[("active", "#ffffff")], foreground=[("active", "#000000")])
+style.configure("r.TButton", background="#545454", foreground="#ffffff", borderwidth=3, relief=tk.RAISED, font=("Courier", 13, "bold"), cursor="arrow")
+style.map("r.TButton", background=[("active", "#000000")], foreground=[("active", "#ff8080")])
 
 r = ttk.Button(master=orange_waves, text="MARKS \n CALCULATOR", style="r.TButton")
 r.place(x=50, y=55, width=151, height=57)
 
-style.configure("b.TButton", background="#e6e6e6", foreground="#008ba3", borderwidth=3, relief=tk.RAISED, font=("Courier", 13, "bold"), cursor="arrow")
-style.map("b.TButton", background=[("active", "#E4E2E2")], foreground=[("active", "#000")])
+style.configure("b.TButton", background="#545454", foreground="#ffffff", borderwidth=3, relief=tk.RAISED, font=("Courier", 13, "bold"), cursor="arrow")
+style.map("b.TButton", background=[("active", "#000000")], foreground=[("active", "#ff8080")])
 
 b = ttk.Button(master=orange_waves, text="GOALS SETTER", style="b.TButton")
 b.place(x=230, y=55, width=151, height=57)
 
-style.configure("b1.TButton", background="#E4E2E2", foreground="#008ba3", borderwidth=3, font=("Courier", 13, "bold"), cursor="arrow")
-style.map("b1.TButton", background=[("active", "#E4E2E2")], foreground=[("active", "#000")])
+style.configure("b1.TButton", background="#545454", foreground="#ffffff", borderwidth=3, font=("Courier", 13, "bold"), cursor="arrow")
+style.map("b1.TButton", background=[("active", "#000000")], foreground=[("active", "#ff8080")])
 
 b1 = ttk.Button(master=orange_waves, text="CALCULATOR", style="b1.TButton")
 b1.place(x=418, y=55, width=151, height=57)
