@@ -1,79 +1,169 @@
-import os 
-import tkinter as tk 
-from tkinter import ttk 
+import os
+import tkinter as tk
+from tkinter import ttk
 from tkinter import messagebox
- 
-try: 
-    from PIL import Image, ImageTk 
-    HAS_PIL = True 
-except ImportError: 
-    HAS_PIL = False 
- 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__)) 
- 
-# --- INITIAL ROOT SETUP --- 
-orange_waves = tk.Tk() 
-orange_waves.title("ORANGE WAVES") 
-orange_waves.geometry("782x441") 
- 
-bg_canvas = tk.Canvas(orange_waves, highlightthickness=0) 
-bg_canvas.pack(fill="both", expand=True) 
- 
-def draw_gradient(canvas): 
-    width = canvas.winfo_width() 
-    height = canvas.winfo_height() 
-    if width <= 1 or height <= 1: 
-        return 
-    canvas.delete("all") 
-    r1, g1, b1 = 255, 166, 166 
-    r2, g2, b2 = 102, 1, 1 
-    for y in range(height): 
-        ratio = y / height 
-        r = int(r1 + (r2 - r1) * ratio) 
-        g = int(g1 + (g2 - g1) * ratio) 
-        b = int(b1 + (b2 - b1) * ratio) 
-        color = f"#{r:02x}{g:02x}{b:02x}" 
-        canvas.create_line(0, y, width, y, fill=color) 
- 
-bg_canvas.bind("<Configure>", lambda event: draw_gradient(bg_canvas)) 
-orange_waves.update_idletasks() 
-orange_waves.geometry("+50+50") 
- 
-if HAS_PIL: 
-    try: 
-        icon_path = os.path.join(BASE_DIR, "assets", "images", "orange waves logo.png") 
-        orange_waves_img = Image.open(icon_path) 
-        orange_waves_img = ImageTk.PhotoImage(orange_waves_img) 
-        orange_waves.iconphoto(False, orange_waves_img) 
-    except Exception: 
-        pass 
- 
-style_ow = ttk.Style(orange_waves) 
-style_ow.theme_use("clam") 
- 
- 
-# --- STEP 3: MAIN DYNAMIC CALCULATOR & GRAPHING APPLICATION --- 
-def open_main_window(chosen_stream, num_subjects=4, split_marks=False, subjects_override=None): 
-    orange_waves.withdraw() 
-    
-    main = tk.Toplevel(orange_waves) 
-    main.title(f"Marks Performance Matrix - {chosen_stream.upper()}") 
-    main.config(bg="#ababab") 
-    
-    # Dynamically expand window height if there are many subjects
+
+# Interconnecting modules via import statements
+import gui_components
+import app_logic
+import marks_selector
+import goal_setter
+import grammar_checker
+import user_profile
+
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# --- INITIAL ROOT SETUP (THE MAIN HUB) ---
+orange_waves = tk.Tk()
+orange_waves.title("ORANGE WAVES")
+orange_waves.resizable(False, False)
+
+hub_canvas = tk.Canvas(orange_waves, highlightthickness=0)
+hub_canvas.pack(fill="both", expand=True)
+hub_canvas.bind("<Configure>", lambda event: gui_components.draw_gradient(hub_canvas))
+
+style_ow = ttk.Style(orange_waves)
+style_ow.theme_use("clam")
+
+# Global tracking placeholders for core hub widgets
+hub_widgets = []
+
+
+# --- AUTHENTICATION PORTAL GENERATOR ---
+def build_auth_portal_directly():
+    """Builds the login and sign-up panels directly onto the root frame securely."""
+    orange_waves.geometry("450x520+150+100")
+
+    # Clear any past widget traces from workspace sessions
+    for widget in orange_waves.winfo_children():
+        if widget != hub_canvas:
+            widget.destroy()
+
+    notebook = ttk.Notebook(orange_waves)
+    notebook.place(x=30, y=40, width=390, height=440)
+
+    # --- TAB 1: SIGN IN INTERFACE ---
+    login_tab = tk.Frame(notebook, bg="#ababab")
+    notebook.add(login_tab, text="  Sign In  ")
+
+    tk.Label(login_tab, text="🔑 USER SIGN IN", font=("Arial", 14, "bold"), bg="#ababab").pack(pady=25)
+
+    tk.Label(login_tab, text="Username:", bg="#ababab", font=("Arial", 10, "bold")).pack(anchor="w", padx=40)
+    l_user = ttk.Entry(login_tab, width=32)
+    l_user.pack(pady=5)
+
+    tk.Label(login_tab, text="Password:", bg="#ababab", font=("Arial", 10, "bold")).pack(anchor="w", padx=40)
+    l_pass = ttk.Entry(login_tab, width=32, show="*")
+    l_pass.pack(pady=5)
+
+    def process_login():
+        ok, msg = user_profile.login_user(l_user.get(), l_pass.get())
+        if ok:
+            messagebox.showinfo("Success", f"Welcome back, {user_profile.get_logged_in_user()}!")
+            notebook.destroy()
+            start_app_flow()
+        else:
+            messagebox.showerror("Error", "Invalid username or password match parameters.")
+
+    # FIX: ttk widgets managed by pack() don't accept width=/height= in pixels —
+    # this raised _tkinter.TclError: unknown option "-width". Use ipadx/ipady instead
+    # to grow the button, which pack() does support.
+    ttk.Button(login_tab, text="Secure Log In", command=process_login).pack(pady=35, ipadx=40, ipady=8)
+
+    # --- TAB 2: CREATE PROFILE INTERFACE ---
+    signup_tab = tk.Frame(notebook, bg="#ababab")
+    notebook.add(signup_tab, text="  Create Profile  ")
+
+    tk.Label(signup_tab, text="📝 REGISTRATION PORTAL", font=("Arial", 14, "bold"), bg="#ababab").pack(pady=20)
+
+    tk.Label(signup_tab, text="Choose Username:", bg="#ababab", font=("Arial", 9, "bold")).pack(anchor="w", padx=40)
+    s_user = ttk.Entry(signup_tab, width=32)
+    s_user.pack(pady=3)
+
+    tk.Label(signup_tab, text="Account Gmail:", bg="#ababab", font=("Arial", 9, "bold")).pack(anchor="w", padx=40)
+    s_mail = ttk.Entry(signup_tab, width=32)
+    s_mail.pack(pady=3)
+
+    tk.Label(signup_tab, text="Secure Password:", bg="#ababab", font=("Arial", 9, "bold")).pack(anchor="w", padx=40)
+    s_pass = ttk.Entry(signup_tab, width=32, show="*")
+    s_pass.pack(pady=3)
+
+    def process_signup():
+        ok, msg = user_profile.register_user(s_user.get(), s_mail.get(), s_pass.get())
+        if ok:
+            messagebox.showinfo("Success", "Account built! You can sign in now.")
+            notebook.select(0)
+        else:
+            messagebox.showerror("Failed Registration", msg)
+
+    # FIX: same pack(width=, height=) issue as above.
+    ttk.Button(signup_tab, text="Complete Sign Up", command=process_signup).pack(pady=25, ipadx=30, ipady=8)
+
+
+# --- AUTHENTICATION INTERACTION HOOK PIPELINES ---
+def start_app_flow():
+    """Expands window dimensions and constructs the primary utility dashboard grid."""
+    global hub_widgets
+    orange_waves.geometry("782x441+50+50")
+
+    # 1. Main Title
+    hub_title = tk.Label(orange_waves, text="ORANGE WAVES SUITE", font=("Arial", 28, "bold"), fg="#fff", bg="#ffa6a6")
+    hub_title.place(relx=0.5, y=50, anchor="center")
+    hub_widgets.append(hub_title)
+
+    # 2. Subtitle showing active profile
+    user = user_profile.get_logged_in_user()
+    display_user = user.upper() if user else "UNKNOWN"
+    hub_subtitle = tk.Label(orange_waves, text=f"Logged in workspace: active session for {display_user}", font=("Arial", 12, "italic"), fg="#fff", bg="#ffa6a6")
+    hub_subtitle.place(relx=0.5, y=95, anchor="center")
+    hub_widgets.append(hub_subtitle)
+
+    # 3. Grid Dashboard Buttons Configuration
+    import profile_window
+    btn_profile = ttk.Button(orange_waves, text="👤 View User Profile", command=lambda: profile_window.open_profile_view(orange_waves, trigger_session_restart))
+    btn_profile.place(x=120, y=180, width=240, height=45)
+    hub_widgets.append(btn_profile)
+
+    btn_marks = ttk.Button(orange_waves, text="📊 Marks Calculator", command=lambda: marks_selector.open_marks_selector_window(orange_waves, open_main_window))
+    btn_marks.place(x=420, y=180, width=240, height=45)
+    hub_widgets.append(btn_marks)
+
+    btn_goals = ttk.Button(orange_waves, text="🎯 Goal & XP Setter", command=lambda: goal_setter.open_goal_setter(orange_waves, get_marks_summary_func=user_profile.get_saved_marks))
+    btn_goals.place(x=120, y=260, width=240, height=45)
+    hub_widgets.append(btn_goals)
+
+    btn_grammar = ttk.Button(orange_waves, text="✍️ Grammar Checker", command=lambda: grammar_checker.open_grammar_checker(orange_waves))
+    btn_grammar.place(x=420, y=260, width=240, height=45)
+    hub_widgets.append(btn_grammar)
+
+
+def trigger_session_restart():
+    """Wipes dashboard buttons out of canvas frames and re-boots login security screen."""
+    global hub_widgets
+    for widget in hub_widgets:
+        widget.destroy()
+    hub_widgets.clear()
+    build_auth_portal_directly()
+
+
+# --- MARKS PERFORMANCE CALCULATOR WINDOW RUNNER ---
+def open_main_window(chosen_stream, num_subjects=4, split_marks=False, subjects_override=None):
+    orange_waves.withdraw()
+    main = tk.Toplevel(orange_waves)
+    main.title(f"Marks Performance Matrix - {chosen_stream.upper()}")
+    main.config(bg="#ababab")
+
     window_height = max(460, 120 + (num_subjects * 45))
-    # Splitting into project/assessment/exam needs more horizontal room for the extra columns
     window_width = 1080 if split_marks else 820
-    main.geometry(f"{window_width}x{window_height}") 
-    main.geometry("+50+50") 
-    
-    def on_close(): 
-        main.destroy() 
-        orange_waves.deiconify() 
-        
-    main.protocol("WM_DELETE_WINDOW", on_close) 
-    
-    # Build the subject list based on selection
+    main.geometry(f"{window_width}x{window_height}")
+    main.geometry("+50+50")
+
+    def on_close():
+        main.destroy()
+        orange_waves.deiconify()
+
+    main.protocol("WM_DELETE_WINDOW", on_close)
+
     if subjects_override is not None:
         subjects = subjects_override
     elif chosen_stream == "Non High School Student":
@@ -85,24 +175,17 @@ def open_main_window(chosen_stream, num_subjects=4, split_marks=False, subjects_
             "Science": ["Physics", "Chemistry", "Mathematics", "English"]
         }
         subjects = stream_subjects.get(chosen_stream, ["Subject 1", "Subject 2", "Subject 3", "Subject 4"])
-    
-    # Each entry in row_entries is a dict of the fields relevant to that row.
-    # Non-split:  {'total': Entry, 'obtained': Entry}
-    # Split:      {'proj_total': Entry, 'proj_obtained': Entry,
-    #              'assess_total': Entry, 'assess_obtained': Entry,
-    #              'exam_total': Entry, 'exam_obtained': Entry}
+
     row_entries = []
-    
-    # Wrap standard layout in a canvas with a scrollbar in case user adds tons of subjects
     form_width = 680 if split_marks else 440
     container = tk.Frame(main, bg="#ababab")
     container.place(x=20, y=20, width=form_width, height=window_height - 90)
-    
+
     form_frame = tk.LabelFrame(container, text=f" Input Marks ({chosen_stream}) ", bg="#ababab", fg="#000", font=("Arial", 11, "bold"))
     form_frame.pack(fill="both", expand=True)
-    
+
     tk.Label(form_frame, text="Subject Name", bg="#ababab", font=("Arial", 10, "bold")).grid(row=0, column=0, padx=8, pady=5, sticky="w")
-    
+
     if split_marks:
         tk.Label(form_frame, text="Project\nTotal", bg="#ababab", font=("Arial", 9, "bold")).grid(row=0, column=1, padx=5, pady=5)
         tk.Label(form_frame, text="Project\nObtained", bg="#ababab", font=("Arial", 9, "bold")).grid(row=0, column=2, padx=5, pady=5)
@@ -113,35 +196,35 @@ def open_main_window(chosen_stream, num_subjects=4, split_marks=False, subjects_
     else:
         tk.Label(form_frame, text="Total Marks", bg="#ababab", font=("Arial", 10, "bold")).grid(row=0, column=1, padx=10, pady=5)
         tk.Label(form_frame, text="Obtained Marks", bg="#ababab", font=("Arial", 10, "bold")).grid(row=0, column=2, padx=10, pady=5)
-    
+
     for idx, sub in enumerate(subjects):
         tk.Label(form_frame, text=sub, bg="#ababab", font=("Arial", 10)).grid(row=idx+1, column=0, padx=8, pady=8, sticky="w")
-        
+
         if split_marks:
             proj_total_entry = ttk.Entry(form_frame, width=6, justify="center")
             proj_total_entry.grid(row=idx+1, column=1, padx=5, pady=8)
             proj_total_entry.insert(0, "20")
-            
+
             proj_obt_entry = ttk.Entry(form_frame, width=6, justify="center")
             proj_obt_entry.grid(row=idx+1, column=2, padx=5, pady=8)
             proj_obt_entry.insert(0, "0")
-            
+
             assess_total_entry = ttk.Entry(form_frame, width=6, justify="center")
             assess_total_entry.grid(row=idx+1, column=3, padx=5, pady=8)
             assess_total_entry.insert(0, "10")
-            
+
             assess_obt_entry = ttk.Entry(form_frame, width=6, justify="center")
             assess_obt_entry.grid(row=idx+1, column=4, padx=5, pady=8)
             assess_obt_entry.insert(0, "0")
-            
+
             exam_total_entry = ttk.Entry(form_frame, width=6, justify="center")
             exam_total_entry.grid(row=idx+1, column=5, padx=5, pady=8)
             exam_total_entry.insert(0, "70")
-            
+
             exam_obt_entry = ttk.Entry(form_frame, width=6, justify="center")
             exam_obt_entry.grid(row=idx+1, column=6, padx=5, pady=8)
             exam_obt_entry.insert(0, "0")
-            
+
             row_entries.append({
                 "proj_total": proj_total_entry,
                 "proj_obtained": proj_obt_entry,
@@ -151,243 +234,73 @@ def open_main_window(chosen_stream, num_subjects=4, split_marks=False, subjects_
                 "exam_obtained": exam_obt_entry,
             })
         else:
-            total_entry = ttk.Entry(form_frame, width=8, justify="center")
+            total_entry = ttk.Entry(form_frame, width=10, justify="center")
             total_entry.grid(row=idx+1, column=1, padx=10, pady=8)
             total_entry.insert(0, "100")
-            
-            obt_entry = ttk.Entry(form_frame, width=8, justify="center")
-            obt_entry.grid(row=idx+1, column=2, padx=10, pady=8)
-            obt_entry.insert(0, "0")
-            
+
+            obtained_entry = ttk.Entry(form_frame, width=10, justify="center")
+            obtained_entry.grid(row=idx+1, column=2, padx=10, pady=8)
+            obtained_entry.insert(0, "0")
+
             row_entries.append({
                 "total": total_entry,
-                "obtained": obt_entry,
+                "obtained": obtained_entry,
             })
- 
-    chart_x = 720 if split_marks else 480
-    chart_width = 340 if split_marks else 310
-    chart_canvas = tk.Canvas(main, bg="#E4E2E2", highlightthickness=1, highlightbackground="#000") 
-    chart_canvas.place(x=chart_x, y=30, width=chart_width, height=340) 
- 
-    def _safe_float(entry):
-        raw = entry.get()
-        try:
-            return float(raw) if raw else 0.0
-        except ValueError:
-            return 0.0
- 
-    def calculate_and_draw():
-        chart_canvas.delete("gauge_elements")
-        
-        total_obtained = 0.0
-        max_possible = 0.0
-        
-        for row in row_entries:
-            try:
-                if split_marks:
-                    proj_total = max(_safe_float(row["proj_total"]), 0)
-                    assess_total = max(_safe_float(row["assess_total"]), 0)
-                    exam_total = max(_safe_float(row["exam_total"]), 0)
-                    proj_obt = min(max(_safe_float(row["proj_obtained"]), 0), proj_total)
-                    assess_obt = min(max(_safe_float(row["assess_obtained"]), 0), assess_total)
-                    exam_obt = min(max(_safe_float(row["exam_obtained"]), 0), exam_total)
-                    max_possible += (proj_total + assess_total + exam_total)
-                    total_obtained += (proj_obt + assess_obt + exam_obt)
-                else:
-                    subj_total = max(_safe_float(row["total"]), 0)
-                    obtained = min(max(_safe_float(row["obtained"]), 0), subj_total)
-                    max_possible += subj_total
-                    total_obtained += obtained
-            except ValueError:
-                pass 
-        
-        percentage = (total_obtained / max_possible) * 100 if max_possible > 0 else 0
-        
-        result_lbl.config(text=f"Aggregate Score: {total_obtained:.1f} / {max_possible:.1f} ({percentage:.2f}%)")
-        
-        chart_canvas.create_text(chart_width // 2, 30, text="TOTAL PERFORMANCE CHART", fill="#000", font=("Arial", 11, "bold"), tags="gauge_elements")
-        chart_canvas.create_rectangle(60, 80, 100, 280, fill="#d0d0d0", outline="#777", tags="gauge_elements")
-        
-        pixel_height = (percentage / 100) * 200
-        y_top = 280 - pixel_height
-        
-        bar_color = "#e66767" if percentage < 40 else "#f5cd79" if percentage < 75 else "#3dc1d3"
-        
-        if pixel_height > 0:
-            chart_canvas.create_rectangle(60, y_top, 100, 280, fill=bar_color, outline="", tags="gauge_elements")
-            
-        chart_canvas.create_text(140, y_top if y_top < 270 else 270, text=f"{percentage:.1f}%", fill="#000", font=("Arial", 12, "bold"), anchor="w", tags="gauge_elements")
-        chart_canvas.create_text(35, 80, text="100%", fill="#555", font=("Arial", 8), tags="gauge_elements")
-        chart_canvas.create_text(35, 180, text="50%", fill="#555", font=("Arial", 8), tags="gauge_elements")
-        chart_canvas.create_text(35, 280, text="0%", fill="#555", font=("Arial", 8), tags="gauge_elements")
- 
-    btn_calc = ttk.Button(main, text="CALCULATE PERFORMANCE GRAPH", command=calculate_and_draw)
-    btn_calc.place(x=20, y=window_height - 60, width=form_width, height=45)
-    
-    result_lbl = tk.Label(main, text="Aggregate Score: 0.0 / 0.0 (0.00%)", bg="#ababab", fg="#000", font=("Arial", 12, "bold"))
-    result_lbl.place(x=chart_x, y=window_height - 55, width=chart_width)
-    
-    calculate_and_draw()
- 
- 
-# --- STEP 2: STREAM SELECTION POPUP WITH DYNAMIC INPUT CONFIGURATION --- 
-def open_selection_window(): 
-    select_win = tk.Toplevel(orange_waves) 
-    select_win.title("Select Your Stream") 
-    select_win.geometry("380x420") 
-    select_win.config(bg="#545454") 
-    select_win.geometry("+200+150") 
-    select_win.resizable(False, False) 
-    
-    def handle_selection(stream): 
-        split = split_marks_var.get()
-        if stream == "Non High School Student":
-            try:
-                count = int(num_subs_entry.get())
-                if count <= 0:
-                    raise ValueError
-                select_win.destroy() 
-                open_main_window(stream, num_subjects=count, split_marks=split)
-            except ValueError:
-                messagebox.showerror("Invalid Input", "Please enter a valid positive number of subjects.")
-        else:
-            select_win.destroy() 
-            open_main_window(stream, split_marks=split) 
- 
-    label = tk.Label(select_win, text="CHOOSE YOUR CATEGORY", bg="#545454", fg="#ffffff", font=("Courier", 12, "bold")) 
-    label.pack(pady=10) 
- 
-    # Dynamic Entry configuration for Custom Number of Subjects
-    non_hs_frame = tk.Frame(select_win, bg="#444444", bd=1, relief="solid")
-    non_hs_frame.pack(fill="x", padx=30, pady=5)
-    
-    lbl_count = tk.Label(non_hs_frame, text="For Non High School Status:\nEnter No. of Subjects:", bg="#444444", fg="#fff", font=("Arial", 9))
-    lbl_count.pack(side="left", padx=5, pady=5)
-    
-    num_subs_entry = ttk.Entry(non_hs_frame, width=5, justify="center")
-    num_subs_entry.pack(side="right", padx=10, pady=5)
-    num_subs_entry.insert(0, "5") # Default placeholder value
- 
-    # --- Total Marks / Project+Exam split toggle ---
-    split_frame = tk.Frame(select_win, bg="#444444", bd=1, relief="solid")
-    split_frame.pack(fill="x", padx=30, pady=8)
- 
-    split_marks_var = tk.BooleanVar(value=False)
-    split_check = tk.Checkbutton(
-        split_frame,
-        text="Add Project / Assessment / External marks separately?\n(otherwise just enter Total & Obtained marks)",
-        variable=split_marks_var,
-        bg="#444444", fg="#fff", selectcolor="#333333",
-        activebackground="#444444", activeforeground="#fff",
-        font=("Arial", 9), justify="left", anchor="w",
-        wraplength=300,
-    )
-    split_check.pack(padx=5, pady=5, anchor="w")
- 
-    def handle_science_selection():
-        split = split_marks_var.get()
- 
-        sci_win = tk.Toplevel(select_win)
-        sci_win.title("Science - Choose Your Subjects")
-        sci_win.geometry("300x260")
-        sci_win.config(bg="#545454")
-        sci_win.resizable(False, False)
-        sci_win.geometry("+220+180")
- 
-        tk.Label(sci_win, text="Which subjects do you have?", bg="#545454", fg="#fff",
-                 font=("Arial", 10, "bold"), wraplength=260).pack(pady=(15, 5))
-        tk.Label(sci_win, text="(Chemistry & English are included by default)", bg="#545454",
-                 fg="#cccccc", font=("Arial", 8), wraplength=260).pack(pady=(0, 10))
- 
-        phy_var = tk.BooleanVar(value=True)
-        maths_var = tk.BooleanVar(value=False)
-        bio_var = tk.BooleanVar(value=False)
- 
-        for label, var in (("Physics", phy_var), ("Maths", maths_var), ("Biology", bio_var)):
-            tk.Checkbutton(
-                sci_win, text=label, variable=var,
-                bg="#545454", fg="#fff", selectcolor="#333333",
-                activebackground="#545454", activeforeground="#fff",
-                font=("Arial", 10), anchor="w",
-            ).pack(fill="x", padx=40, pady=3)
- 
-        def confirm_science():
-            chosen = []
-            if phy_var.get():
-                chosen.append("Physics")
-            chosen.append("Chemistry")
-            if maths_var.get():
-                chosen.append("Maths")
-            if bio_var.get():
-                chosen.append("Biology")
-            chosen.append("English")
- 
-            if not (phy_var.get() or maths_var.get() or bio_var.get()):
-                messagebox.showerror("Invalid Input", "Please select at least one of Physics, Maths or Biology.")
-                return
- 
-            sci_win.destroy()
-            select_win.destroy()
-            open_main_window("Science", subjects_override=chosen, split_marks=split)
- 
-        ttk.Button(sci_win, text="CONTINUE", style="r.TButton", command=confirm_science).pack(pady=15, padx=40, fill="x")
- 
-    streams = ["Art", "Commerce", "Science", "Non High School Student"] 
-    for stream in streams: 
-        # Apply specific logic style visual indicator separation
-        btn_style = "r.TButton"
-        if stream == "Science":
-            command = handle_science_selection
-        else:
-            command = lambda s=stream: handle_selection(s)
-        btn = ttk.Button( 
-            select_win, 
-            text=stream, 
-            style=btn_style, 
-            command=command
-        ) 
-        btn.pack(fill="x", padx=30, pady=5) 
- 
- 
-# --- BUTTON LAYOUT MAPPINGS --- 
-style_ow.configure("r.TButton", background="#545454", foreground="#ffffff", borderwidth=3, relief=tk.RAISED, font=("Courier", 11, "bold"), cursor="arrow") 
-style_ow.map("r.TButton", background=[("active", "#000000")], foreground=[("active", "#ff8080")]) 
- 
-r = ttk.Button(master=orange_waves, text="MARKS \n CALCULATOR", style="r.TButton", command=open_selection_window) 
-r.place(x=50, y=55, width=151, height=57) 
- 
-style_ow.configure("b.TButton", background="#545454", foreground="#ffffff", borderwidth=3, relief=tk.RAISED, font=("Courier", 11, "bold"), cursor="arrow") 
-style_ow.map("b.TButton", background=[("active", "#000000")], foreground=[("active", "#ff8080")]) 
-b = ttk.Button(master=orange_waves, text="GOALS SETTER", style="b.TButton") 
-b.place(x=230, y=55, width=151, height=57) 
- 
-style_ow.configure("b1.TButton", background="#545454", foreground="#ffffff", borderwidth=3, font=("Courier", 11, "bold"), cursor="arrow") 
-style_ow.map("b1.TButton", background=[("active", "#000000")], foreground=[("active", "#ff8080")]) 
-b1 = ttk.Button(master=orange_waves, text="CALCULATOR", style="b1.TButton") 
-b1.place(x=418, y=55, width=151, height=57) 
- 
+
+    # --- RIGHT SIDE: RESULTS / GAUGE PANEL ---
+    # NOTE: this whole panel was missing from the file you sent me (it cut off
+    # right after exam_obt_entry was created) — I've written it from scratch
+    # to match the rest of the app's style. Adjust freely if you had something
+    # else in mind for this half of the window.
+    results_container = tk.Frame(main, bg="#ababab")
+    results_container.place(x=form_width + 40, y=20, width=window_width - form_width - 60, height=window_height - 90)
+
+    results_frame = tk.LabelFrame(results_container, text=" 📈 Performance Results ", bg="#ababab", fg="#000", font=("Arial", 11, "bold"))
+    results_frame.pack(fill="both", expand=True)
+
+    gauge_canvas = tk.Canvas(results_frame, bg="#ffffff", highlightthickness=0)
+    gauge_canvas.pack(fill="both", expand=True, padx=15, pady=15)
+
+    summary_lbl = tk.Label(results_frame, text="Enter marks and press Calculate", font=("Arial", 10, "italic"), bg="#ababab", fg="#555")
+    summary_lbl.pack(pady=(0, 10))
+
+    # Keeps the most recently calculated per-subject percentages so the
+    # Save button has something to hand to user_profile.
+    last_calculated = {"subject_marks": None}
+
+    def redraw_gauge(percentage):
+        gauge_canvas.update_idletasks()
+        gui_components.draw_gauge(gauge_canvas, percentage, label=chosen_stream)
+
+    gauge_canvas.bind("<Configure>", lambda event: redraw_gauge(
+        last_calculated["subject_marks"] and app_logic.process_marks_summary(row_entries, split_marks)[2] or 0
+    ))
+
+    def run_calculation():
+        total_obtained, max_possible, percentage = app_logic.process_marks_summary(row_entries, split_marks)
+        subject_marks = app_logic.build_per_subject_marks(row_entries, subjects, split_marks)
+        last_calculated["subject_marks"] = subject_marks
+
+        summary_lbl.config(
+            text=f"Total: {total_obtained:.2f} / {max_possible:.2f}  •  Overall: {percentage:.1f}%"
+        )
+        redraw_gauge(percentage)
+
+    def save_to_profile():
+        if not last_calculated["subject_marks"]:
+            messagebox.showwarning("Nothing to Save", "Please press Calculate before saving results to your profile.")
+            return
+        user_profile.save_calculated_marks(last_calculated["subject_marks"])
+        messagebox.showinfo("Saved", "Your results have been linked to your profile.\nCheck the Goal & XP Setter's 'Auto-Build From Marks' option!")
+
+    button_bar = tk.Frame(main, bg="#ababab")
+    button_bar.place(x=20, y=window_height - 60, width=window_width - 40, height=40)
+
+    ttk.Button(button_bar, text="🧮 Calculate", command=run_calculation).place(x=0, y=0, width=150, height=35)
+    ttk.Button(button_bar, text="💾 Save to Profile", command=save_to_profile).place(x=160, y=0, width=170, height=35)
+    ttk.Button(button_bar, text="⬅ Back to Hub", command=on_close).place(relx=1.0, x=-150, y=0, width=150, height=35, anchor="ne")
+
+
+# --- APP BOOTSTRAP ---
+build_auth_portal_directly()
 orange_waves.mainloop()
-
-
-    
-
-
-
-
-
-
-
-    
-
-    
-
-
-
-
-
-
-
-
-
-
- 
