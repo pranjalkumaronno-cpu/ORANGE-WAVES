@@ -9,7 +9,7 @@
                 {
                     "id": "note_af1e10ce45",
                     "title": "spiderman",
-                    "subtopic": "suit",
+                    "subtopic": "web fluid",
                     "content": "A web-shooter is a fictional wrist-mounted gadget used by the superhero Spider-Man to fire synthetic, high-tensile web fluid.Core Design and MechanicsHardware: Created by Peter Parker, the mechanical device is strapped to his wrists and made of steel parts.Activation Switch: It features a palm trigger that requires a specific, sharp double-tap or heavy pressure (around 65 pounds) from the inner fingers to fire. This design keeps him from accidentally shooting a web when making a fist.Web Fluid: A special chemical formula stored in high-pressure cartridges. The liquid turns into a tough, sticky, and flexible rope the second it hits the open air.Uses and AbilitiesSwing and Travel: Allows Spider-Man to swing fast between tall buildings and travel across the city.Combat and Traps: Used to tie up enemies, blind villains, or create protective shields and parachutes.Character Symbol: Shows Peter Parker's high-level genius and skills in chemistry and engineering",
                     "parent_id": null
                 }
@@ -23,8 +23,8 @@
                             "id": "node_a722096c72",
                             "text": "web shooter",
                             "parent_id": null,
-                            "x": 544.0,
-                            "y": 229.4
+                            "x": 499.0,
+                            "y": 134.39999999999998
                         },
                         {
                             "id": "node_0c07e1aa5d",
@@ -32,10 +32,17 @@
                             "parent_id": null,
                             "x": 495.0,
                             "y": 393.6
+                        },
+                        {
+                            "id": "node_fa03a6d7a2",
+                            "text": "web fluid",
+                            "parent_id": "node_a722096c72",
+                            "x": 746.0,
+                            "y": 101.4
                         }
                     ],
-                    "root_x": 828.0,
-                    "root_y": 235.0
+                    "root_x": 256.0,
+                    "root_y": 52.0
                 },
                 {
                     "id": "map_8ad7f9f1f8",
