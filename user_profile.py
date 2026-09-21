@@ -5,111 +5,180 @@ DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "user_profile
 
 # Database structural memory mapping all users and tracking current session state
 _database = {
-    "users": {},          # Maps username -> {"gmail": str, "password": str, "xp": int, "saved_marks": dict}
-    "current_user": None  # Tracks who is currently authenticated
+    "users": {},
+    "current_user": None
 }
 
 
 def load_database():
-    """Loads database structural state variables from permanent JSON file blocks."""
     global _database
-    if os.path.exists(DB_FILE):
-        try:
-            with open(DB_FILE, "r") as f:
+    try:
+        if os.path.exists(DB_FILE):
+            with open(DB_FILE, "r", encoding="utf-8") as f:
                 loaded = json.load(f)
-                if isinstance(loaded, dict) and "users" in loaded:
-                    _database["users"] = loaded["users"]
-                    # Reset active runtime session variables on cold startup for security
-                    _database["current_user"] = None
-        except Exception:
-            pass
+
+            # Keep compatibility with older user_profile.json files.
+            if isinstance(loaded, dict):
+                _database["users"] = loaded.get("users", {})
+            else:
+                _database["users"] = {}
+        else:
+            _database["users"] = {}
+    except (OSError, json.JSONDecodeError):
+        _database["users"] = {}
+
+    _database["current_user"] = None
 
 
 def save_database():
-    """Commits user registers and scores into absolute local file tracks."""
-    global _database
     try:
-        with open(DB_FILE, "w") as f:
-            json.dump({"users": _database["users"]}, f, indent=4)
-    except Exception:
+        with open(DB_FILE, "w", encoding="utf-8") as f:
+            json.dump(
+                {"users": _database["users"]},
+                f,
+                indent=4,
+                ensure_ascii=False
+            )
+    except OSError:
         pass
 
 
+def _get_active_profile():
+    username = _database.get("current_user")
+    if not username:
+        return None
+    return _database["users"].get(username)
+
+
 def register_user(username, gmail, password):
-    """Registers a unique profile structure inside the ledger system."""
-    global _database
     username = username.strip()
+    gmail = gmail.strip()
+
     if not username or not gmail or not password:
-        return False, "All registration input parameters are mandatory."
+        return False, "All fields are required."
+
     if username in _database["users"]:
-        return False, "Username matches an existing profile record."
+        return False, "Username already exists."
+
     _database["users"][username] = {
-        "gmail": gmail.strip(),
+        "gmail": gmail,
         "password": password,
         "xp": 0,
-        "saved_marks": {}
+        "saved_marks": {},
+        "notes": [],
+        "mind_maps": []
     }
     save_database()
-    return True, "Registration completed successfully!"
+    return True, "Account created successfully."
 
 
 def login_user(username, password):
-    """Verifies access keys to initialize an active workspace layer."""
-    global _database
     username = username.strip()
-    if username in _database["users"] and _database["users"][username]["password"] == password:
+    profile = _database["users"].get(username)
+
+    if profile and profile.get("password") == password:
         _database["current_user"] = username
-        return True, "Access granted."
-    return False, "Invalid authentication matching attributes."
+        return True, "Login successful."
+
+    return False, "Invalid username or password."
 
 
 def logout_user():
-    """Closes down session tokens immediately."""
-    global _database
     _database["current_user"] = None
 
 
 def get_logged_in_user():
-    global _database
-    return _database["current_user"]
-
-
-def _get_active_profile():
-    global _database
-    user = _database["current_user"]
-    if user and user in _database["users"]:
-        return _database["users"][user]
-    return None
+    return _database.get("current_user")
 
 
 def add_xp(amount=5):
-    prof = _get_active_profile()
-    if prof:
-        prof["xp"] = prof.get("xp", 0) + amount
-        save_database()
-        return prof["xp"]
-    return 0
+    profile = _get_active_profile()
+    if profile is None:
+        return 0
+
+    try:
+        amount = int(amount)
+    except (TypeError, ValueError):
+        amount = 0
+
+    profile["xp"] = max(0, int(profile.get("xp", 0)) + amount)
+    save_database()
+    return profile["xp"]
 
 
 def get_xp():
-    prof = _get_active_profile()
-    return prof.get("xp", 0) if prof else 0
+    profile = _get_active_profile()
+    return int(profile.get("xp", 0)) if profile else 0
 
 
 def save_calculated_marks(marks_dict):
-    prof = _get_active_profile()
-    if prof:
-        prof["saved_marks"] = marks_dict
-        save_database()
+    profile = _get_active_profile()
+    if profile is None:
+        return False
+
+    profile["saved_marks"] = dict(marks_dict or {})
+    save_database()
+    return True
 
 
 def get_saved_marks():
-    prof = _get_active_profile()
-    return prof.get("saved_marks", {}) if prof else {}
+    profile = _get_active_profile()
+    if profile is None:
+        return {}
+    return dict(profile.get("saved_marks", {}))
+
+
+# ---------------- NOTES & MIND MAPS ----------------
+
+def _ensure_learning_storage(profile):
+    """Adds the new fields to old accounts without breaking them."""
+    if profile is None:
+        return
+    if not isinstance(profile.get("notes"), list):
+        profile["notes"] = []
+    if not isinstance(profile.get("mind_maps"), list):
+        profile["mind_maps"] = []
+
+
+def get_notes():
+    profile = _get_active_profile()
+    if profile is None:
+        return []
+    _ensure_learning_storage(profile)
+    return profile["notes"]
+
+
+def save_notes(notes):
+    profile = _get_active_profile()
+    if profile is None:
+        return False
+    _ensure_learning_storage(profile)
+    profile["notes"] = list(notes or [])
+    save_database()
+    return True
+
+
+def get_mind_maps():
+    profile = _get_active_profile()
+    if profile is None:
+        return []
+    _ensure_learning_storage(profile)
+    return profile["mind_maps"]
+
+
+def save_mind_maps(mind_maps):
+    profile = _get_active_profile()
+    if profile is None:
+        return False
+    _ensure_learning_storage(profile)
+    profile["mind_maps"] = list(mind_maps or [])
+    save_database()
+    return True
 
 
 def calculate_level_info():
     xp = get_xp()
+
     if xp < 50:
         return 1, xp, 50, "Novice Learner"
     elif xp < 120:
@@ -118,12 +187,9 @@ def calculate_level_info():
         return 3, xp - 120, 100, "Focus Master"
     else:
         extra_xp = xp - 220
-        lvl_offset = extra_xp // 150
-        rem_xp = extra_xp % 150
-        return 4 + lvl_offset, rem_xp, 150, "Grandmaster Scholar"
+        level = 4 + (extra_xp // 150)
+        current = extra_xp % 150
+        return level, current, 150, "Grandmaster Scholar"
 
 
-# Run cold structural check configuration on boot sequence
 load_database()
-
-
