@@ -2,16 +2,23 @@
     "users": {
         "Daredevil": {
             "gmail": "pranjal.kumar.onno@gmail.com",
-            "password": "pran12345",
+            "password": "1151",
             "xp": 5,
             "saved_marks": {},
             "notes": [
                 {
                     "id": "note_af1e10ce45",
                     "title": "spiderman",
-                    "subtopic": "web fluid",
+                    "subtopic": "web shooter",
                     "content": "A web-shooter is a fictional wrist-mounted gadget used by the superhero Spider-Man to fire synthetic, high-tensile web fluid.Core Design and MechanicsHardware: Created by Peter Parker, the mechanical device is strapped to his wrists and made of steel parts.Activation Switch: It features a palm trigger that requires a specific, sharp double-tap or heavy pressure (around 65 pounds) from the inner fingers to fire. This design keeps him from accidentally shooting a web when making a fist.Web Fluid: A special chemical formula stored in high-pressure cartridges. The liquid turns into a tough, sticky, and flexible rope the second it hits the open air.Uses and AbilitiesSwing and Travel: Allows Spider-Man to swing fast between tall buildings and travel across the city.Combat and Traps: Used to tie up enemies, blind villains, or create protective shields and parachutes.Character Symbol: Shows Peter Parker's high-level genius and skills in chemistry and engineering",
                     "parent_id": null
+                },
+                {
+                    "id": "note_45dbf92efa",
+                    "title": "spiderman -",
+                    "subtopic": "web fluid",
+                    "content": "",
+                    "parent_id": "note_af1e10ce45"
                 }
             ],
             "mind_maps": [
@@ -23,26 +30,74 @@
                             "id": "node_a722096c72",
                             "text": "web shooter",
                             "parent_id": null,
-                            "x": 499.0,
-                            "y": 134.39999999999998
+                            "x": 468.0,
+                            "y": 143.39999999999998,
+                            "fill": "#93ce97",
+                            "outline": "#8b0000",
+                            "shape": "rectangle",
+                            "edge_color": "#cda5d8",
+                            "edge_style": "dotted",
+                            "edge_width": 2,
+                            "font_size": 10,
+                            "icon": "",
+                            "border_width": 2
                         },
                         {
                             "id": "node_0c07e1aa5d",
                             "text": "suit",
                             "parent_id": null,
                             "x": 495.0,
-                            "y": 393.6
+                            "y": 393.6,
+                            "fill": "#ffe1e1",
+                            "outline": "#8b0000",
+                            "shape": "rounded",
+                            "edge_color": "#777777",
+                            "edge_style": "straight",
+                            "edge_width": 2,
+                            "font_size": 10,
+                            "icon": ""
                         },
                         {
                             "id": "node_fa03a6d7a2",
                             "text": "web fluid",
                             "parent_id": "node_a722096c72",
-                            "x": 746.0,
-                            "y": 101.4
+                            "x": 737.0,
+                            "y": 83.4,
+                            "fill": "#d6a0b9",
+                            "outline": "#8b0000",
+                            "shape": "rounded",
+                            "edge_color": "#777777",
+                            "edge_style": "straight",
+                            "edge_width": 2,
+                            "font_size": 10,
+                            "icon": ""
+                        },
+                        {
+                            "id": "node_c6497e30c0",
+                            "text": "mj",
+                            "parent_id": null,
+                            "x": 187.0,
+                            "y": 173.00000000000003,
+                            "fill": "#ffe1e1",
+                            "outline": "#8b0000",
+                            "shape": "rounded",
+                            "edge_color": "#777777",
+                            "edge_style": "straight",
+                            "edge_width": 2,
+                            "font_size": 10,
+                            "icon": ""
                         }
                     ],
-                    "root_x": 256.0,
-                    "root_y": 52.0
+                    "root_x": 198.0,
+                    "root_y": 70.0,
+                    "root_fill": "#18aab1",
+                    "root_outline": "#4d0000",
+                    "root_edge_color": "#b5b6f2",
+                    "root_edge_style": "straight",
+                    "root_edge_width": 2,
+                    "root_icon": "",
+                    "root_border_width": 2,
+                    "root_shape": "oval"
                 },
                 {
                     "id": "map_8ad7f9f1f8",
@@ -51,9 +106,23 @@
                         {
                             "id": "node_0bbc1b33fc",
                             "text": "Light Reaction",
-                            "parent_id": null
+                            "parent_id": null,
+                            "fill": "#ffe1e1",
+                            "outline": "#8b0000",
+                            "shape": "rounded",
+                            "edge_color": "#777777",
+                            "edge_style": "straight",
+                            "edge_width": 2,
+                            "font_size": 10,
+                            "icon": ""
                         }
-                    ]
+                    ],
+                    "root_fill": "#8b0000",
+                    "root_outline": "#4d0000",
+                    "root_edge_color": "#777777",
+                    "root_edge_style": "straight",
+                    "root_edge_width": 2,
+                    "root_icon": ""
                 }
             ]
         }

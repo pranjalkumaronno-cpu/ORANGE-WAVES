@@ -1,5 +1,5 @@
 import tkinter as tk
-from tkinter import ttk, messagebox, simpledialog
+from tkinter import ttk, messagebox, simpledialog, colorchooser
 import math
 import uuid
 import user_profile
@@ -8,6 +8,25 @@ import user_profile
 BG = "#ababab"
 PANEL = "#f4f4f4"
 ACCENT = "#8b0000"
+DEFAULT_NODE_FILL = "#ffe1e1"
+DEFAULT_NODE_OUTLINE = ACCENT
+DEFAULT_EDGE = "#777777"
+SHAPES = ("rectangle", "rounded", "oval", "diamond", "pill")
+EDGE_STYLES = ("straight", "curved", "elbow", "dashed", "dotted")
+
+def _ensure_node_style(node):
+    changed = False
+    defaults = {
+        "fill": DEFAULT_NODE_FILL, "outline": DEFAULT_NODE_OUTLINE,
+        "shape": "rounded", "edge_color": DEFAULT_EDGE,
+        "edge_style": "straight", "edge_width": 2,
+        "font_size": 10, "icon": "",
+    }
+    for key, value in defaults.items():
+        if key not in node:
+            node[key] = value
+            changed = True
+    return changed
 
 
 def _normalise(value):
@@ -39,12 +58,23 @@ def _get_mind_maps():
         if "nodes" not in mind_map or not isinstance(mind_map["nodes"], list):
             mind_map["nodes"] = []
             changed = True
+        root_defaults = {
+            "root_fill": ACCENT, "root_outline": "#4d0000",
+            "root_edge_color": DEFAULT_EDGE, "root_edge_style": "straight",
+            "root_edge_width": 2, "root_icon": ""
+        }
+        for key, value in root_defaults.items():
+            if key not in mind_map:
+                mind_map[key] = value
+                changed = True
         for node in mind_map["nodes"]:
             if not node.get("id"):
                 node["id"] = _new_id("node")
                 changed = True
             if "parent_id" not in node:
                 node["parent_id"] = None
+                changed = True
+            if _ensure_node_style(node):
                 changed = True
     if changed:
         user_profile.save_mind_maps(maps)
@@ -376,6 +406,28 @@ def open_notes_mindmaps(parent_window):
     ttk.Button(top_map_bar, text="🆕 New Map", command=lambda: clear_map_editor()).pack(side="left", padx=4)
     ttk.Button(top_map_bar, text="🗑 Delete", command=lambda: delete_map()).pack(side="left", padx=4)
 
+    style_bar = tk.LabelFrame(map_right, text=" 🎨 Selected Node Style ", bg=BG, padx=6, pady=4)
+    style_bar.pack(fill="x", pady=(4, 2))
+    style_shape_var = tk.StringVar(value="rounded")
+    style_edge_var = tk.StringVar(value="straight")
+    style_width_var = tk.StringVar(value="2")
+    style_border_var = tk.StringVar(value="2")
+    style_icon_var = tk.StringVar(value="")
+    ttk.Label(style_bar, text="Shape", background=BG).pack(side="left")
+    ttk.Combobox(style_bar, textvariable=style_shape_var, values=SHAPES, width=10, state="readonly").pack(side="left", padx=4)
+    ttk.Label(style_bar, text="Connection", background=BG).pack(side="left", padx=(8,0))
+    ttk.Combobox(style_bar, textvariable=style_edge_var, values=EDGE_STYLES, width=10, state="readonly").pack(side="left", padx=4)
+    ttk.Label(style_bar, text="Width", background=BG).pack(side="left", padx=(8,0))
+    ttk.Combobox(style_bar, textvariable=style_width_var, values=("1","2","3","4","5"), width=4, state="readonly").pack(side="left", padx=4)
+    ttk.Label(style_bar, text="Border", background=BG).pack(side="left", padx=(8,0))
+    ttk.Combobox(style_bar, textvariable=style_border_var, values=("1","2","3","4","5"), width=4, state="readonly").pack(side="left", padx=4)
+    ttk.Label(style_bar, text="Icon", background=BG).pack(side="left", padx=(8,0))
+    ttk.Entry(style_bar, textvariable=style_icon_var, width=6).pack(side="left", padx=4)
+    ttk.Button(style_bar, text="Node Color", command=lambda: choose_node_color("fill")).pack(side="left", padx=3)
+    ttk.Button(style_bar, text="Border", command=lambda: choose_node_color("outline")).pack(side="left", padx=3)
+    ttk.Button(style_bar, text="Line Color", command=lambda: choose_node_color("edge_color")).pack(side="left", padx=3)
+    ttk.Button(style_bar, text="Apply Style", command=lambda: apply_node_style()).pack(side="left", padx=5)
+
     tk.Label(map_right, textvariable=selected_node_info, bg=BG, fg="#444", anchor="w").pack(fill="x", pady=(4, 0))
 
     map_canvas_frame = tk.Frame(map_right, bg="white", bd=1, relief="sunken")
@@ -446,6 +498,107 @@ def open_notes_mindmaps(parent_window):
         angle = (2 * math.pi * index / count) - math.pi / 2
         return root_x + min(280, width * 0.33) * math.cos(angle), root_y + min(180, height * 0.32) * math.sin(angle)
 
+    def selected_style_node():
+        mind_map = get_selected_map()
+        nid = selected_node_id["value"]
+        if not mind_map:
+            return None
+        if nid == "__root__":
+            return mind_map
+        return node_by_id(mind_map, nid)
+
+    def sync_style_controls():
+        obj = selected_style_node()
+        if not obj:
+            return
+        if obj is get_selected_map():
+            style_shape_var.set("rounded")
+            style_edge_var.set(obj.get("root_edge_style", "straight"))
+            style_width_var.set(str(obj.get("root_edge_width", 2)))
+            style_border_var.set(str(obj.get("root_border_width", 2)))
+            style_icon_var.set(obj.get("root_icon", ""))
+        else:
+            _ensure_node_style(obj)
+            style_shape_var.set(obj.get("shape", "rounded"))
+            style_edge_var.set(obj.get("edge_style", "straight"))
+            style_width_var.set(str(obj.get("edge_width", 2)))
+            style_border_var.set(str(obj.get("border_width", 2)))
+            style_icon_var.set(obj.get("icon", ""))
+
+    def choose_node_color(kind):
+        obj = selected_style_node()
+        if not obj:
+            messagebox.showwarning("Select a Node", "Select a node first.")
+            return
+        actual_kind = kind
+        if obj is get_selected_map():
+            actual_kind = {"fill": "root_fill", "outline": "root_outline", "edge_color": "root_edge_color"}.get(kind, kind)
+        initial = obj.get(actual_kind, ACCENT if kind == "outline" else DEFAULT_NODE_FILL)
+        picked = colorchooser.askcolor(title="Choose color", initialcolor=initial)[1]
+        if picked:
+            obj[actual_kind] = picked
+            _save_mind_maps(_get_mind_maps())
+            mind_map = get_selected_map()
+            if mind_map:
+                draw_map(mind_map)
+                sync_style_controls()
+
+    def apply_node_style():
+        obj = selected_style_node()
+        mind_map = get_selected_map()
+        if not obj or not mind_map:
+            messagebox.showwarning("Select a Node", "Select a node first.")
+            return
+        if obj is mind_map:
+            obj["root_edge_style"] = style_edge_var.get()
+            obj["root_edge_width"] = int(style_width_var.get())
+            obj["root_border_width"] = int(style_border_var.get())
+            obj["root_shape"] = style_shape_var.get()
+            obj["root_icon"] = style_icon_var.get().strip()
+        else:
+            _ensure_node_style(obj)
+            obj["shape"] = style_shape_var.get()
+            obj["edge_style"] = style_edge_var.get()
+            obj["edge_width"] = int(style_width_var.get())
+            obj["border_width"] = int(style_border_var.get())
+            obj["icon"] = style_icon_var.get().strip()
+        _save_mind_maps(_get_mind_maps())
+        draw_map(mind_map)
+        sync_style_controls()
+
+    def node_polygon_points(x, y, w, h):
+        return (x, y-h/2, x+w/2, y, x, y+h/2, x-w/2, y)
+
+    def draw_edge(px, py, x, y, style, width, color):
+        dash = None
+        if style == "dashed": dash = (8, 5)
+        elif style == "dotted": dash = (2, 5)
+        if style == "curved":
+            midx = (px+x)/2
+            return map_canvas.create_line(px, py, midx, py, midx, y, x, y, fill=color, width=width, smooth=True, splinesteps=20, dash=dash)
+        if style == "elbow":
+            return map_canvas.create_line(px, py, px, y, x, y, fill=color, width=width, dash=dash)
+        return map_canvas.create_line(px, py, x, y, fill=color, width=width, dash=dash)
+
+    def draw_node_shape(x, y, w, h, node, tags):
+        shape = node.get("shape", "rounded")
+        fill = node.get("fill", DEFAULT_NODE_FILL)
+        outline = node.get("outline", DEFAULT_NODE_OUTLINE)
+        border_width = max(1, int(node.get("border_width", 2)))
+        if shape in ("oval", "pill"):
+            return map_canvas.create_oval(x-w/2, y-h/2, x+w/2, y+h/2, fill=fill, outline=outline, width=border_width, tags=tags)
+        if shape == "diamond":
+            return map_canvas.create_polygon(*node_polygon_points(x,y,w,h), fill=fill, outline=outline, width=border_width, tags=tags)
+        if shape == "rounded":
+            # Tkinter Canvas has no native rounded rectangle.  Build one from
+            # a rounded-looking polygon with clipped corners.
+            r = min(16, h/2, w/8)
+            pts = (x-w/2+r,y-h/2, x+w/2-r,y-h/2, x+w/2,y-h/2+r,
+                   x+w/2,y+h/2-r, x+w/2-r,y+h/2, x-w/2+r,y+h/2,
+                   x-w/2,y+h/2-r, x-w/2,y-h/2+r)
+            return map_canvas.create_polygon(*pts, fill=fill, outline=outline, width=border_width, smooth=True, tags=tags)
+        return map_canvas.create_rectangle(x-w/2, y-h/2, x+w/2, y+h/2, fill=fill, outline=outline, width=border_width, tags=tags)
+
     def draw_map(mind_map):
         current_nodes.clear()
         map_canvas.delete("all")
@@ -469,21 +622,34 @@ def open_notes_mindmaps(parent_window):
             positions[node.get("id")] = (x, y)
 
         for node in nodes:
+            _ensure_node_style(node)
             x, y = positions[node.get("id")]
             parent_id = node.get("parent_id")
             if parent_id and parent_id in positions:
                 px, py = positions[parent_id]
+                parent_node = node_by_id(mind_map, parent_id) or {}
+                edge_style = node.get("edge_style", parent_node.get("edge_style", "straight"))
+                edge_color = node.get("edge_color", parent_node.get("edge_color", DEFAULT_EDGE))
+                edge_width = int(node.get("edge_width", parent_node.get("edge_width", 2)))
             else:
                 px, py = root_x, root_y
-            map_canvas.create_line(px, py, x, y, fill="#777", width=2, tags=("edge",))
+                edge_style = node.get("edge_style", mind_map.get("root_edge_style", "straight"))
+                edge_color = node.get("edge_color", mind_map.get("root_edge_color", DEFAULT_EDGE))
+                edge_width = int(node.get("edge_width", mind_map.get("root_edge_width", 2)))
+            draw_edge(px, py, x, y, edge_style, edge_width, edge_color)
 
         root_w, root_h = 190, 65
-        root_rect = map_canvas.create_rectangle(
-            root_x - root_w / 2, root_y - root_h / 2,
-            root_x + root_w / 2, root_y + root_h / 2,
-            fill=ACCENT, outline="#4d0000", width=2, tags=("root_node",)
-        )
-        root_text_item = map_canvas.create_text(root_x, root_y, text=mind_map.get("name", "Untitled Mind Map"), fill="white", font=("Arial", 12, "bold"), width=175, tags=("root_text",))
+        root_fill = mind_map.get("root_fill", ACCENT)
+        root_outline = mind_map.get("root_outline", "#4d0000")
+        root_style = {
+            "shape": mind_map.get("root_shape", "rounded"),
+            "fill": root_fill,
+            "outline": root_outline,
+            "border_width": mind_map.get("root_border_width", 2),
+        }
+        root_rect = draw_node_shape(root_x, root_y, root_w, root_h, root_style, ("root_node",))
+        root_label = f'{mind_map.get("root_icon", "")} {mind_map.get("name", "Untitled Mind Map")}'.strip()
+        root_text_item = map_canvas.create_text(root_x, root_y, text=root_label, fill="white", font=("Arial", 12, "bold"), width=175, tags=("root_text",))
         current_nodes["__root__"] = {"id": "__root__", "text": mind_map.get("name", ""), "item_id": root_rect, "x": root_x, "y": root_y}
         map_canvas.tag_bind(root_rect, "<Button-1>", lambda e: begin_node_drag("__root__", e))
         map_canvas.tag_bind(root_text_item, "<Button-1>", lambda e: begin_node_drag("__root__", e))
@@ -491,12 +657,9 @@ def open_notes_mindmaps(parent_window):
         for node in nodes:
             x, y = positions[node.get("id")]
             node_w, node_h = 165, 55
-            rect = map_canvas.create_rectangle(
-                x - node_w / 2, y - node_h / 2,
-                x + node_w / 2, y + node_h / 2,
-                fill="#ffe1e1", outline=ACCENT, width=2, tags=("node",)
-            )
-            node_text_item = map_canvas.create_text(x, y, text=node.get("text", ""), fill="#222", font=("Arial", 10, "bold"), width=145, tags=("node_text",))
+            rect = draw_node_shape(x, y, node_w, node_h, node, ("node",))
+            label = f'{node.get("icon", "")} {node.get("text", "")}'.strip()
+            node_text_item = map_canvas.create_text(x, y, text=label, fill="#222", font=("Arial", int(node.get("font_size", 10)), "bold"), width=145, tags=("node_text",))
             current_nodes[node.get("id")] = {"id": node.get("id"), "text": node.get("text", ""), "item_id": rect, "x": x, "y": y}
             map_canvas.tag_bind(rect, "<Button-1>", lambda e, nid=node.get("id"): begin_node_drag(nid, e))
             map_canvas.tag_bind(node_text_item, "<Button-1>", lambda e, nid=node.get("id"): begin_node_drag(nid, e))
@@ -504,6 +667,7 @@ def open_notes_mindmaps(parent_window):
         if selected_node_id["value"] not in current_nodes:
             selected_node_id["value"] = "__root__"
         update_selected_label(mind_map)
+        sync_style_controls()
 
     def update_selected_label(mind_map):
         nid = selected_node_id["value"]
@@ -607,6 +771,15 @@ def open_notes_mindmaps(parent_window):
             "parent_id": parent_real_id,
             "x": None,
             "y": None,
+            "fill": DEFAULT_NODE_FILL,
+            "outline": DEFAULT_NODE_OUTLINE,
+            "shape": "rounded",
+            "edge_color": DEFAULT_EDGE,
+            "edge_style": "straight",
+            "edge_width": 2,
+            "border_width": 2,
+            "font_size": 10,
+            "icon": "",
         }
         nodes.append(new_node)
         _save_mind_maps(_get_mind_maps())
@@ -632,6 +805,14 @@ def open_notes_mindmaps(parent_window):
                 "nodes": [],
                 "root_x": None,
                 "root_y": None,
+                "root_fill": ACCENT,
+                "root_outline": "#4d0000",
+                "root_edge_color": DEFAULT_EDGE,
+                "root_edge_style": "straight",
+                "root_edge_width": 2,
+                "root_border_width": 2,
+                "root_shape": "rounded",
+                "root_icon": "",
             }
             maps.append(new_map)
             selected_map_id["value"] = new_map["id"]
